@@ -37,7 +37,7 @@ namespace csMTG
 
             // Add default properties
 
-            AddProperty("Edge_Type");
+            AddProperty("edge_type");
             AddProperty("label");
 
         }
@@ -395,8 +395,9 @@ namespace csMTG
         {
             if (componentId == -1)
                 componentId = NewId();
-
+            
             SetARoot(componentId);
+
 
             if(namesValues != null)
                 AddVertexProperties(componentId, namesValues);

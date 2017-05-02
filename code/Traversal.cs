@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web.Script.Serialization;
 
 namespace csMTG
 {
@@ -23,7 +24,7 @@ namespace csMTG
             if (complex != -1 && tree.Complex(vertexId) != complex)
                 yield break;
 
-            Dictionary<int, dynamic> edgeType = tree.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeType = tree.Property("edge_type");
 
             Stack<int> stack = new Stack<int>();
             stack.Push(vertexId);
@@ -75,7 +76,7 @@ namespace csMTG
             if (complex != -1 && tree.Complex(vertexId) != complex)
                 yield break;
 
-            Dictionary<int, dynamic> edgeType = tree.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeType = tree.Property("edge_type");
 
             List<int> successor = new List<int>();
             yield return vertexId;
@@ -115,7 +116,7 @@ namespace csMTG
         /// <returns> Returns an iterator. </returns>
         public IEnumerable<int> IterativePostOrder(mtg tree, int vertexId, int complex = -1)
         {
-            Dictionary<int, dynamic> edgeType = tree.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeType = tree.Property("edge_type");
             Dictionary<int, dynamic> emptyDictionary = new Dictionary<int, dynamic>();
 
             // Internal function
@@ -192,7 +193,7 @@ namespace csMTG
             if (complex != -1 && tree.Complex(vertexId) != complex)
                 yield break;
 
-            Dictionary<int, dynamic> edgeType = tree.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeType = tree.Property("edge_type");
 
             List<int> successor = new List<int>();
 
@@ -225,49 +226,64 @@ namespace csMTG
         #region Save to file
 
         /// <summary>
-        /// Saves the PropertyTree into a file (.tlp)
+        /// Saves the PropertyTree/MTG into a file (.tlp)
         /// </summary>
-        /// <param name="tree"> The property tree to save. </param>
+        /// <param name="mtg"> The property tree/mtg to save. </param>
+        /// /// <param name="ismtgsaved"> true: save mtg, false save property tree. </param>
         /// <param name="path"> Contains the path and the name of the file (Do not mention the extension). </param>
-        public void SaveToFile(PropertyTree tree, string path)
+        public void SaveToFile(mtg mtg, string path, bool ismtgsaved=false)
         {
             
             using (System.IO.StreamWriter file =
                 new System.IO.StreamWriter(@path+".tlp"))
             {
                 // First line
-                file.WriteLine("(tlp \"2.0\"");
 
+                //file.WriteLine("(tlp \"2.0\"");
+
+                //Debug
+                file.WriteLine("(tlp \"2.0\")");
+                //Debug
                 // List of all nodes
-                file.Write("(nodes");
+
+                file.WriteLine("(nb_nodes " + mtg.parent.Keys.Count + ")");
+
+                int upperbound = mtg.parent.Keys.Count - 1;
+
+               file.WriteLine("(nodes " + "0.." + upperbound + ")");
+
+               /*file.Write("(nodes");
                 foreach (int node in tree.parent.Keys)
                 {
                     file.Write(" " + node);
                 }
                 file.WriteLine(")");
-
+                */
                 // List of all edges
                 int countEdges = 0;
 
-                foreach (int edge in tree.parent.Keys)
+                foreach (int edge in mtg.parent.Keys)
                 {
-                    if (edge != 0)
+                   //if (edge != 0 && (int)tree.Parent(edge)!=-1)
+                    if (edge != 0 )
                     {
                         countEdges++;
 
-                        file.WriteLine("(edge " + countEdges + " " + (int)tree.Parent(edge) + " " + edge + ")");
+                        if ((int)mtg.Parent(edge) != -1) file.WriteLine("(edge " + countEdges + " " + (int)mtg.Parent(edge) + " " + edge + ")");
+                        else if (ismtgsaved == true) file.WriteLine("(edge " + countEdges + " " + (int)mtg.Complex(edge) + " " + edge + ")");
+                        
                     }
                 }
 
                 // List of all clusters
                 int clusterId = 1;
 
-                foreach (string name in tree.PropertyNames())
+                foreach (string name in mtg.PropertyNames())
                 {
                     file.WriteLine("(cluster " + clusterId + " " + name);
 
                     file.Write("(nodes");
-                    foreach (int node in tree.Property(name).Keys)
+                    foreach (int node in mtg.Property(name).Keys)
                     {
                         file.Write(" " + node);
                     }
@@ -279,21 +295,134 @@ namespace csMTG
                 // List of all properties
                 int propertyId = 1;
 
-                foreach (string name in tree.PropertyNames())
+                foreach (string name in mtg.PropertyNames())
                 {
                     file.WriteLine("(property " + propertyId + " string \"" + name + "\"");
 
-                    Dictionary<int, dynamic> property = tree.Property(name);
+                    Dictionary<int, dynamic> property = mtg.Property(name);
 
                     foreach (int id in property.Keys)
                     {
-                        file.WriteLine("(node " + id + " " + property[id] + ")");
+                        file.WriteLine("(node " + id + " " + "\"" + property[id] + "\"" + ")");
                     }
 
                     file.WriteLine(")");
                     propertyId++;
                 }
+                //Debug
+                //file.WriteLine(")");
+                //Debug
             }
+        }
+
+
+
+        public void SaveToJSONFile(mtg mtg, string path, bool ismtgsaved = false)
+        {
+
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(@path + ".json"))
+            {
+
+                Dictionary<string, int> parentString = new Dictionary<string, int>();
+                foreach (int key in mtg.parent.Keys) parentString.Add(key.ToString(), mtg.parent[key]);
+
+                var jss = new JavaScriptSerializer();
+                var dict = jss.Serialize(parentString);
+
+                file.WriteLine("{\"parent\":");
+                file.Write(dict);
+                file.WriteLine("}");
+                file.WriteLine("");
+                file.WriteLine("");
+
+                Dictionary<string, List<int>> childrenString = new Dictionary<string, List<int>>();
+                foreach (int key in mtg.children.Keys) childrenString.Add(key.ToString(), mtg.children[key]);
+
+                dict = jss.Serialize(childrenString);
+
+                file.WriteLine("{\"children\":");
+                file.Write(dict);
+                file.WriteLine("}");
+                file.WriteLine("");
+                file.WriteLine("");
+
+                Dictionary<string, int> complexString = new Dictionary<string, int>();
+                foreach (int key in mtg.complex.Keys) complexString.Add(key.ToString(), mtg.complex[key]);
+
+                dict = jss.Serialize(complexString);
+
+                file.WriteLine("{\"complex\":");
+                file.Write(dict);
+                file.WriteLine("}");
+                file.WriteLine("");
+                file.WriteLine("");
+
+                Dictionary<string, List<int>> componentString = new Dictionary<string, List<int>>();
+                foreach (int key in mtg.components.Keys) componentString.Add(key.ToString(), mtg.components[key]);
+
+                dict = jss.Serialize(componentString);
+
+                file.WriteLine("{\"components\":");
+                file.Write(dict);
+                file.WriteLine("}");
+                file.WriteLine("");
+                file.WriteLine("");
+
+                int countEdges = 0;
+
+                Dictionary<string, List<int>> Dictedge = new Dictionary<string, List<int>>();
+
+                foreach (int edge in mtg.parent.Keys)
+                {
+                    List<int> listedge;
+                    if (edge != 0)
+                    {
+                        listedge = new List<int>();
+
+                        countEdges++;
+                        listedge.Add((int)mtg.Parent(edge));
+                        listedge.Add(edge);
+
+                        Dictedge.Add(countEdges.ToString(), listedge);
+                      
+
+                    }
+                }
+
+                dict = jss.Serialize(Dictedge);
+                file.WriteLine("{\"edges\":");
+                file.Write(dict);
+                file.WriteLine("}");
+                file.WriteLine("");
+                file.WriteLine("");
+
+                Dictionary<string, Dictionary<string, dynamic>> propertiesString = new Dictionary<string, Dictionary<string, dynamic>>();
+
+                foreach (string key in mtg.properties.Keys){
+                    Dictionary<string, dynamic> TampProp=new Dictionary<string,dynamic>();
+                    foreach (int keydict in mtg.properties[key].Keys) TampProp.Add(keydict.ToString(), mtg.properties[key][keydict]);
+                    propertiesString.Add(key, TampProp);
+
+                }
+                dict = jss.Serialize(propertiesString);
+
+                file.WriteLine("{\"properties\":");
+                file.Write(dict);
+                file.WriteLine("}");
+                file.WriteLine("");
+                file.WriteLine("");
+                
+
+            }
+
+           /* using (System.IO.StreamReader r = new System.IO.StreamReader(@path + ".json"))
+            {
+                string json = r.ReadToEnd();
+                var jss = new JavaScriptSerializer();
+                Dictionary<int, Dictionary<int, int>> items = jss.Deserialize<Dictionary<int, Dictionary<int, int>>>(json);
+            }*/
+
         }
 
         #endregion

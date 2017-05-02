@@ -44,9 +44,9 @@ namespace csMTG
                     int newChild;
 
                     if (i == childrenToAdd % 2)
-                        newChild = t.AddChild(randomVertex, new Dictionary<string, dynamic>() { { "Edge_Type", "<" } });
+                        newChild = t.AddChild(randomVertex, new Dictionary<string, dynamic>() { { "edge_type", "<" } });
                     else
-                        newChild = t.AddChild(randomVertex, new Dictionary<string, dynamic>() { { "Edge_Type", "+" } });
+                        newChild = t.AddChild(randomVertex, new Dictionary<string, dynamic>() { { "edge_type", "+" } });
 
                     randomStack.Add(newChild);
                     nbVertices--;
@@ -133,7 +133,7 @@ namespace csMTG
                         try
                         {
                             string edgeType = edgeTypeProperty[componentId];
-                            tree.AddChild((int)parentId, new Dictionary<string, dynamic>() { { "Edge_Type", edgeType } }, vid);
+                            tree.AddChild((int)parentId, new Dictionary<string, dynamic>() { { "edge_type", edgeType } }, vid);
                         }
                         catch (KeyNotFoundException)
                         {
@@ -177,7 +177,7 @@ namespace csMTG
         /// <returns> An iterator on the ancestors of the vertexId up to the root. </returns>
         public IEnumerable<int> FullAncestors(mtg g, int vertexId, string restrictedTo = "NoRestriction", string edgeType = "*", int containedIn = -1)
         {
-            Dictionary<int, dynamic> edgeT = g.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeT = g.Property("edge_type");
             int cScale;
             int v = vertexId;
 
@@ -235,7 +235,7 @@ namespace csMTG
         {
             int maxScale = slimMtg.MaxScale();
 
-            Dictionary<int, dynamic> edgeTypeProperty = slimMtg.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeTypeProperty = slimMtg.Property("edge_type");
 
             for (int scale = maxScale - 1; scale > 0; scale--)
             {
@@ -496,7 +496,7 @@ namespace csMTG
             if (labels == null)
                 labels = tree.Property("label");
             if (edgeType == null)
-                edgeType = tree.Property("Edge_Type");
+                edgeType = tree.Property("edge_type");
 
             string edgeT;
 
@@ -542,7 +542,7 @@ namespace csMTG
         public IEnumerable<string> DisplayMtg(mtg tree, int vertexId)
         {
             Dictionary<int, dynamic> label = tree.Property("label");
-            Dictionary<int, dynamic> edgeType = tree.Property("Edge_Type");
+            Dictionary<int, dynamic> edgeType = tree.Property("edge_type");
 
             traversal t = new traversal();
             string edgeT;
